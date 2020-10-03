@@ -1,9 +1,9 @@
 # Read documentation at https://async-aws.com/integration/symfony-bundle.html
 async_aws:
     config:
-        region: eu-central-1
-        endpoint: http://localhost:4566
-        pathStyleEndpoint: true
+        region: '%env(AWS_S3_REGION)%'
+        endpoint: '%env(AWS_S3_ENDPOINT)%'
+        pathStyleEndpoint: '%env(AWS_S3_PATHSTYLE_ENDPOINT)%'
 
     # All installed clients are automatically autowired. Use this section to customize clients
     clients:

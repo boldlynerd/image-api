@@ -32,17 +32,24 @@ class ImageController
      */
     public function create(Request $request)
     {
-        $this->imageRepository->create(
-            $this->imageRepository->load($request->Get('userName'), $request->get('imageName')),
-            $request->get('base64Image')
-        );
+        try {
+            $this->imageRepository->create(
+                $this->imageRepository->load(
+                    trim($request->get('userName')),
+                    trim($request->get('imageName'))
+                ),
+                $request->get('base64Image')
+            );
 
-        //todo nice to return the URL directly
-        return new JsonResponse(['success' => true]);
+            //todo would be nice to return the URL directly
+            return new JsonResponse(['success' => true]);
+        } catch (\Exception $e) {
+            return new JsonResponse(['success' => false, 'errorCode' => $e->getCode(), 'errorMessage' => $e->getMessage()]);
+        }
     }
 
     /**
-     * @Route("/api/imageUrl/{userName}/{imageName}", methods={"GET"})
+     * @Route("/api/images/urls/{userName}/{imageName}", methods={"GET"})
      * @param string $userName
      * @param string $imageName
      *
@@ -55,6 +62,18 @@ class ImageController
     }
 
     /**
+     * @Route("/api/images/user/{userName}", methods={"GET"})
+     *
+     * @param string $userName
+     *
+     * @return JsonResponse
+     */
+    public function getByUser(string $userName)
+    {
+        return new JsonResponse(['success' => true, 'images' => $this->imageRepository->loadImageListByUserName($userName)]);
+    }
+
+    /**
      * @Route("/api/images/{key}", methods={"GET"})
      *
      * @param string $key
@@ -62,17 +81,6 @@ class ImageController
     public function read(string $key)
     {
         //stub, not part of HomeCase functionality
-    }
-
-    /**
-     * @Route("/api/images/user/{userName}", methods={"GET"})
-     *
-     * @param string $userName
-     */
-    public function readByUser(string $userName)
-    {
-        var_dump($this->imageRepository->loadImageListByUserName($userName));
-        die('hi ' . $userName);
     }
 
     /**
