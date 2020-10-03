@@ -4,8 +4,74 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "7bca2dea0ed41d19002cf8bb9e4bea07",
+    "content-hash": "79bca69d29be5dbafe6e21f08882e23e",
     "packages": [
+        {
+            "name": "async-aws/async-aws-bundle",
+            "version": "1.1.1",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/async-aws/symfony-bundle.git",
+                "reference": "fe3e3f25be0de9925b821cbcbf94cebf38b1ddd0"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/async-aws/symfony-bundle/zipball/fe3e3f25be0de9925b821cbcbf94cebf38b1ddd0",
+                "reference": "fe3e3f25be0de9925b821cbcbf94cebf38b1ddd0",
+                "shasum": ""
+            },
+            "require": {
+                "async-aws/core": "^1.0",
+                "php": "^7.2.5 || ^8.0",
+                "symfony/config": "^4.4 || ^5.0",
+                "symfony/dependency-injection": "^4.4 || ^5.0",
+                "symfony/http-kernel": "^4.4 || ^5.0"
+            },
+            "require-dev": {
+                "async-aws/s3": "^1.0",
+                "async-aws/ses": "^1.0",
+                "async-aws/sqs": "^1.0",
+                "async-aws/ssm": "^0.2",
+                "matthiasnoback/symfony-config-test": "^4.1",
+                "nyholm/symfony-bundle-test": "^1.6.1",
+                "symfony/cache": "^4.4 || ^5.0"
+            },
+            "type": "symfony-bundle",
+            "extra": {
+                "branch-alias": {
+                    "dev-master": "1.2-dev"
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "AsyncAws\\Symfony\\Bundle\\": "src"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "description": "Configure all your AsyncAws services and enjoy the autowire greatness.",
+            "keywords": [
+                "amazon",
+                "async-aws",
+                "aws",
+                "bundle",
+                "sdk",
+                "symfony"
+            ],
+            "funding": [
+                {
+                    "url": "https://github.com/jderusse",
+                    "type": "github"
+                },
+                {
+                    "url": "https://github.com/nyholm",
+                    "type": "github"
+                }
+            ],
+            "time": "2020-10-02T11:13:07+00:00"
+        },
         {
             "name": "async-aws/core",
             "version": "1.6.0",
