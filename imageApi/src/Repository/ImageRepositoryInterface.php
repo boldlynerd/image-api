@@ -28,10 +28,10 @@ interface ImageRepositoryInterface
 
     /**
      * @param Image $image
-     * @param string $base64Image
+     * @param UploadedFile $file
      * @return Image
      */
-    public function update(Image $image, string $base64Image);
+    public function update(Image $image, UploadedFile $file);
 
     /**
      * @param Image $image

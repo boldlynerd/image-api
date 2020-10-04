@@ -84,10 +84,14 @@ class ImageController
     {
         // todo could check if user found, but returning an empty array is also correct,
         // since we are not persisting users anywhere
-        return new JsonResponse([
-            'success' => true,
-            'images' => $this->imageRepository->loadImageListByUserName($userName)
-        ]);
+        try {
+            return new JsonResponse([
+                'success' => true,
+                'images' => $this->imageRepository->loadImageListByUserName($userName)
+            ]);
+        } catch (\Exception $e) {
+            return new JsonResponse(['success' => false, 'errorCode' => $e->getCode(), 'errorMessage' => $e->getMessage()]);
+        }
     }
 
     /**

@@ -17,12 +17,12 @@
     
 ### Endpoints:
 ####Upload one image to S3
-`/api/images/ (POST)`
+`/api/images/ (POST - multipart form data)`
 
 Params:
 * userName | url-friendly string
 * imageName | url-friendly string
-* base64Image | base64 encoded image
+* image | image file
 
 ####Return the presigned S3 URL for one image
 `/api/images/urls/{userName}/{imageName} (GET)`
@@ -31,4 +31,6 @@ Params:
 `/api/images/user/{userName} (GET)`
 
 
-todo: list of errors + error codes
+todo (general): 
+* document list of errors + error codes
+* exception classes

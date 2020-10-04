@@ -10,6 +10,15 @@ use Symfony\Component\HttpFoundation\File\UploadedFile;
 
 class AwsImageRepository implements ImageRepositoryInterface
 {
+    const ERROR_IMAGE_UPLOAD_NOT_FOUND = 1;
+    const ERROR_IMAGE_NAME_INVALID = 2;
+    const ERROR_USERNAME_INVALID = 3;
+    const ERROR_IMAGE_NOT_FOUND = 4;
+    const ERROR_IMAGE_TYPE_NOT_ALLOWED = 5;
+    const ERROR_IMAGE_ALREADY_EXISTS = 6;
+    const ERROR_IMAGE_TOO_BIG = 7;
+    const ERROR_IMAGE_TOO_SMALL = 8;
+
     /**
      * @var SimpleS3Client
      */
@@ -22,10 +31,10 @@ class AwsImageRepository implements ImageRepositoryInterface
     {
         $this->s3Client = $s3Client;
         $this->bucket = $_SERVER['AWS_S3_BUCKET'];
-        if ((int)$_SERVER['IMAGE_SIZE_BYTES_MIN'] > 0) {
+        if (!empty($_SERVER['IMAGE_SIZE_BYTES_MIN']) && (int)$_SERVER['IMAGE_SIZE_BYTES_MIN'] > 0) {
             $this->imageSizeBytesMin = (int)$_SERVER['IMAGE_SIZE_BYTES_MIN'];
         }
-        if ((int)$_SERVER['IMAGE_SIZE_BYTES_MAX'] > 0) {
+        if (!empty($_SERVER['IMAGE_SIZE_BYTES_MAX']) && (int)$_SERVER['IMAGE_SIZE_BYTES_MAX'] > 0) {
             $this->imageSizeBytesMax = (int)$_SERVER['IMAGE_SIZE_BYTES_MAX'];
         }
     }
@@ -36,45 +45,21 @@ class AwsImageRepository implements ImageRepositoryInterface
      */
     public function create(Image $image, UploadedFile $file = null)
     {
-        //basic checks
-        if (empty($image->getUserName())) {
-            throw new Exception('Creation failed: Username invalid', 2);
-        }
-        if (empty($image->getName())) {
-            throw new Exception('Creation failed: Image name invalid', 3);
-        }
-        if (empty($file)) {
-            throw new Exception('Creation failed: Image missing', 6);
+        try {
+            $this->areRequiredArgumentsPresent($image, $file);
+        } catch (Exception $e) {
+            throw new Exception('Creation failed: ' . $e->getMessage(), $e->getCode());
         }
 
-        //file validity checks
-        //todo use file->getMimeType() which is safe but requires symfony/mime which needs to be installed
-        //todo human readable image sizes in error messages
-        if (!in_array($file->getClientMimeType(), Image::ALLOWED_MIME_TYPES)) {
-            throw new Exception(
-                'Creation failed: Image must be one of following types: '
-                . implode(',', Image::ALLOWED_MIME_TYPES),
-                7
-            );
-        }
-
-        if ($file->getSize() < $this->imageSizeBytesMin) {
-            throw new Exception(
-                'Creation failed: Image must be at least ' . $this->imageSizeBytesMin . ' bytes',
-                8
-            );
-        }
-
-        if ($file->getSize() > $this->imageSizeBytesMax) {
-            throw new Exception(
-                'Creation failed: Image must be less than ' . $this->imageSizeBytesMax . ' bytes',
-                9
-            );
+        try {
+            $this->areFileTypeAndImageValid($file);
+        } catch (Exception $e) {
+            throw new Exception('Creation failed: ' . $e->getMessage(), $e->getCode());
         }
 
         //s3 checks
         if ($this->s3Client->has($this->bucket, $this->getAwsImageKey($image))) {
-            throw new Exception('Creation failed: Image exists', 1);
+            throw new Exception('Creation failed: Image exists', self::ERROR_IMAGE_ALREADY_EXISTS);
         }
 
         // the upload call saves a file with 0 bytes to the localstack S3 bucket
@@ -95,7 +80,7 @@ class AwsImageRepository implements ImageRepositoryInterface
     public function getUrl(Image $image)
     {
         if (!$this->s3Client->has($this->bucket, $this->getAwsImageKey($image))) {
-            throw new Exception('Image not found', 4);
+            throw new Exception('Image not found', self::ERROR_IMAGE_NOT_FOUND);
         }
 
         //not presigned
@@ -134,7 +119,7 @@ class AwsImageRepository implements ImageRepositoryInterface
     /**
      * @inheritDoc
      */
-    public function update(Image $image, string $base64Image)
+    public function update(Image $image, UploadedFile $file)
     {
         // TODO: Implement update() method.
     }
@@ -182,10 +167,59 @@ class AwsImageRepository implements ImageRepositoryInterface
      * @return string
      *
      * https://docs.aws.amazon.com/AmazonS3/latest/dev/UsingMetadata.html
-     * todo: allow special handling characters
+     * todo: allow characters which need special handling
      */
     private function cleanStringForAws(string $string)
     {
         return preg_replace('~[^0-9a-z!\-_\.\*\'()]~i', '', $string);
+    }
+
+    /**
+     * @param Image $image
+     * @param UploadedFile|null $file
+     * @throws Exception
+     */
+    private function areRequiredArgumentsPresent(Image $image, ?UploadedFile $file): void
+    {
+        if (empty($image->getUserName())) {
+            throw new Exception('Username invalid', self::ERROR_USERNAME_INVALID);
+        }
+        if (empty($image->getName())) {
+            throw new Exception('Image name invalid', self::ERROR_IMAGE_NAME_INVALID);
+        }
+        if (empty($file)) {
+            throw new Exception('Image missing', self::ERROR_IMAGE_UPLOAD_NOT_FOUND);
+        }
+    }
+
+    /**
+     * @param UploadedFile|null $file
+     * @throws Exception
+     *
+     * todo human readable image sizes in error messages
+     */
+    private function areFileTypeAndImageValid(?UploadedFile $file): void
+    {
+        if (!in_array($file->getMimeType(), Image::ALLOWED_MIME_TYPES)) {
+            throw new Exception(
+                'Image must be one of following types: '
+                . implode(',', Image::ALLOWED_MIME_TYPES),
+                self::ERROR_IMAGE_TYPE_NOT_ALLOWED
+            );
+        }
+
+        if ($file->getSize() < $this->imageSizeBytesMin) {
+            throw new Exception(
+                'Image must be at least ' . $this->imageSizeBytesMin . ' bytes',
+                self::ERROR_IMAGE_TOO_SMALL
+            );
+        }
+
+        if ($file->getSize() > $this->imageSizeBytesMax) {
+            throw new Exception(
+                'Image must be less than ' . $this->imageSizeBytesMax . ' bytes',
+                self::ERROR_IMAGE_TOO_BIG
+            );
+        }
     }
 }
