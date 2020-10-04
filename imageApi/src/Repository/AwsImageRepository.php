@@ -15,30 +15,67 @@ class AwsImageRepository implements ImageRepositoryInterface
      */
     private SimpleS3Client $s3Client;
     private string $bucket;
+    private int $imageSizeBytesMin = 400000;
+    private int $imageSizeBytesMax = 1000000;
 
     public function __construct(SimpleS3Client $s3Client)
     {
         $this->s3Client = $s3Client;
         $this->bucket = $_SERVER['AWS_S3_BUCKET'];
+        if ((int)$_SERVER['IMAGE_SIZE_BYTES_MIN'] > 0) {
+            $this->imageSizeBytesMin = (int)$_SERVER['IMAGE_SIZE_BYTES_MIN'];
+        }
+        if ((int)$_SERVER['IMAGE_SIZE_BYTES_MAX'] > 0) {
+            $this->imageSizeBytesMax = (int)$_SERVER['IMAGE_SIZE_BYTES_MAX'];
+        }
     }
 
     /**
      * @inheritDoc
      * @throws Exception
      */
-    public function create(Image $image, UploadedFile $file)
+    public function create(Image $image, UploadedFile $file = null)
     {
+        //basic checks
         if (empty($image->getUserName())) {
             throw new Exception('Creation failed: Username invalid', 2);
         }
         if (empty($image->getName())) {
             throw new Exception('Creation failed: Image name invalid', 3);
         }
+        if (empty($file)) {
+            throw new Exception('Creation failed: Image missing', 6);
+        }
+
+        //file validity checks
+        //todo use file->getMimeType() which is safe but requires symfony/mime which needs to be installed
+        //todo human readable image sizes in error messages
+        if (!in_array($file->getClientMimeType(), Image::ALLOWED_MIME_TYPES)) {
+            throw new Exception(
+                'Creation failed: Image must be one of following types: '
+                . implode(',', Image::ALLOWED_MIME_TYPES),
+                7
+            );
+        }
+
+        if ($file->getSize() < $this->imageSizeBytesMin) {
+            throw new Exception(
+                'Creation failed: Image must be at least ' . $this->imageSizeBytesMin . ' bytes',
+                8
+            );
+        }
+
+        if ($file->getSize() > $this->imageSizeBytesMax) {
+            throw new Exception(
+                'Creation failed: Image must be less than ' . $this->imageSizeBytesMax . ' bytes',
+                9
+            );
+        }
+
+        //s3 checks
         if ($this->s3Client->has($this->bucket, $this->getAwsImageKey($image))) {
             throw new Exception('Creation failed: Image exists', 1);
         }
-
-        //todo file validity testing here
 
         // the upload call saves a file with 0 bytes to the localstack S3 bucket
         // even their example code fails

@@ -11,6 +11,9 @@
     * AWS_SECRET_ACCESS_KEY
     * AWS_S3_REGION
     * AWS_S3_PATHSTYLE_ENDPOINT
+* optional variables:
+    * IMAGE_SIZE_BYTES_MAX (default 1000000)
+    * IMAGE_SIZE_BYTES_MIN (default 400000)
     
 ### Endpoints:
 ####Upload one image to S3

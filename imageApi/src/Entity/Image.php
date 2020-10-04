@@ -4,9 +4,11 @@ namespace App\Entity;
 
 class Image
 {
+    const ALLOWED_MIME_TYPES = ['image/jpeg'];
+
     private string $name;
 
-    private string $type; //todo possibly enum
+    private string $type;
 
     private int $bytes;
 
