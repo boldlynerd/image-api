@@ -3,8 +3,10 @@
 namespace App\Repository;
 
 use App\Entity\Image;
+use AsyncAws\S3\Input\GetObjectRequest;
 use AsyncAws\SimpleS3\SimpleS3Client;
 use Exception;
+use Symfony\Component\HttpFoundation\File\UploadedFile;
 
 class AwsImageRepository implements ImageRepositoryInterface
 {
@@ -24,7 +26,7 @@ class AwsImageRepository implements ImageRepositoryInterface
      * @inheritDoc
      * @throws Exception
      */
-    public function create(Image $image, string $base64Image)
+    public function create(Image $image, UploadedFile $file)
     {
         if (empty($image->getUserName())) {
             throw new Exception('Creation failed: Username invalid', 2);
@@ -36,13 +38,18 @@ class AwsImageRepository implements ImageRepositoryInterface
             throw new Exception('Creation failed: Image exists', 1);
         }
 
-        $fileName = sys_get_temp_dir() . DIRECTORY_SEPARATOR . $image->getName();
-        file_put_contents($fileName, base64_decode($base64Image));
-        $resource = fopen($fileName, 'r');
+        //todo file validity testing here
 
-        $this->s3Client->upload($this->bucket, $this->getAwsImageKey($image), $resource);
+        // the upload call saves a file with 0 bytes to the localstack S3 bucket
+        // even their example code fails
+        //$this->s3Client->upload('my-image-bucket', 'photos/cat_2.txt', 'I like this cat');
+        //
+        // if I use the AWS CLI to upload a file it works
+        // conclusion: not my code at fault, but extremely frustrating
+        //
+        // possible reasons: windows??? ugh
 
-        //todo clean up temp dir
+        $this->s3Client->upload($this->bucket, $this->getAwsImageKey($image), $file->getPathname());
     }
 
     /**
@@ -50,22 +57,41 @@ class AwsImageRepository implements ImageRepositoryInterface
      */
     public function getUrl(Image $image)
     {
-        //todo check if object exists
-        return $this->s3Client->getUrl($this->bucket, $this->getAwsImageKey($image));
+        if (!$this->s3Client->has($this->bucket, $this->getAwsImageKey($image))) {
+            throw new Exception('Image not found', 4);
+        }
 
-        /*
-         * todo test if time allows
+        //not presigned
+        //return $this->s3Client->getUrl($this->bucket, $this->getAwsImageKey($image));
 
-            $input = new GetObjectRequest([
-                'Bucket' => 'my-bucket',
-                'Key' => 'test',
-            ]);
+        $objectRequest = new GetObjectRequest([
+            'Bucket' => $this->bucket,
+            'Key' => $this->getAwsImageKey($image),
+        ]);
 
-            // Sign on the fly
-            $content = $s3->getObject($input);
+        return $this->s3Client->presign($objectRequest, new \DateTimeImmutable('+30 min'));
 
-         $url = $s3->presign($input, new \DateTimeImmutable('+60 min'));
-         */
+    }
+
+    /**
+     * @param string $userName
+     *
+     * @return array
+     */
+    public function loadImageListByUserName(string $userName)
+    {
+        $userName = $this->cleanStringForAws($userName);
+
+        $matchingImages = $this->s3Client->listObjectsV2(
+            ['Bucket' => $this->bucket, 'Prefix' => $userName]
+        );
+
+        $imageNames = [];
+        foreach ($matchingImages as $image) {
+            $imageNames[] = str_replace($userName . '/', '', $image->getKey());
+        }
+
+        return $imageNames;
     }
 
     /**
@@ -94,22 +120,6 @@ class AwsImageRepository implements ImageRepositoryInterface
 
     /**
      * @param string $userName
-     *
-     * @return array
-     */
-    public function loadImageListByUserName(string $userName)
-    {
-        $matchingImages = $this->s3Client->listObjectsV2(['Bucket' => $this->bucket, 'Prefix' => $userName]);
-
-        $imageNames = [];
-        foreach ($matchingImages as $image) {
-            $imageNames[] = str_replace($userName . '/', '', $image->getKey());
-        }
-        return $imageNames;
-    }
-
-    /**
-     * @param string $userName
      * @param string $imageName
      * @return Image
      */
@@ -117,8 +127,8 @@ class AwsImageRepository implements ImageRepositoryInterface
     {
         $image = new Image();
         return $image
-            ->setName($this->urlify($imageName))
-            ->setUserName($this->urlify($userName));
+            ->setName($this->cleanStringForAws($imageName))
+            ->setUserName($this->cleanStringForAws($userName));
     }
 
     /**
@@ -137,7 +147,7 @@ class AwsImageRepository implements ImageRepositoryInterface
      * https://docs.aws.amazon.com/AmazonS3/latest/dev/UsingMetadata.html
      * todo: allow special handling characters
      */
-    private function urlify(string $string)
+    private function cleanStringForAws(string $string)
     {
         return preg_replace('~[^0-9a-z!\-_\.\*\'()]~i', '', $string);
     }

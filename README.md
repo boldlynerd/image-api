@@ -21,8 +21,11 @@ Params:
 * imageName | url-friendly string
 * base64Image | base64 encoded image
 
-####Return the S3 URL for one image
+####Return the presigned S3 URL for one image
 `/api/images/urls/{userName}/{imageName} (GET)`
 
 ####Return the list of image names for one user
 `/api/images/user/{userName} (GET)`
+
+
+todo: list of errors + error codes

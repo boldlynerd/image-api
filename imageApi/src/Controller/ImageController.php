@@ -35,10 +35,10 @@ class ImageController
         try {
             $this->imageRepository->create(
                 $this->imageRepository->load(
-                    trim($request->get('userName')),
-                    trim($request->get('imageName'))
+                    trim($request->get('userName', '')),
+                    trim($request->get('imageName', ''))
                 ),
-                $request->get('base64Image')
+                $request->files->get('image')
             );
 
             //todo would be nice to return the URL directly
@@ -57,8 +57,12 @@ class ImageController
      */
     public function getUrl(string $userName, string $imageName)
     {
-        $image = $this->imageRepository->load($userName, $imageName);
-        return new JsonResponse(['success' => true, 'url' => $this->imageRepository->getUrl($image)]);
+        try {
+            $image = $this->imageRepository->load($userName, $imageName);
+            return new JsonResponse(['success' => true, 'url' => $this->imageRepository->getUrl($image)]);
+        } catch (\Exception $e) {
+            return new JsonResponse(['success' => false, 'errorCode' => $e->getCode(), 'errorMessage' => $e->getMessage()]);
+        }
     }
 
     /**
@@ -70,6 +74,7 @@ class ImageController
      */
     public function getByUser(string $userName)
     {
+        //todo could check if user found, but an empty array is also correct, since we are not persisting users anywhere
         return new JsonResponse(['success' => true, 'images' => $this->imageRepository->loadImageListByUserName($userName)]);
     }
 
