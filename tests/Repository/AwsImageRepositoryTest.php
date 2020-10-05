@@ -14,9 +14,16 @@ class AwsImageRepositoryTest extends TestCase
     const TEST_UPLOADED_IMAGENAME = 'testImageName.jpg';
     const TEST_JPG = __DIR__ . DIRECTORY_SEPARATOR . '..' . DIRECTORY_SEPARATOR . 'assets' . DIRECTORY_SEPARATOR . 'googlyeyedmerlin.jpg';
 
+    /**
+     * @var array
+     */
+    private $testUserListImages = [];
+
     protected function setUp(): void
     {
         $s3Client = $this->getSimpleS3Client();
+
+        //todo just empty & delete test bucket
 
         //create test bucket
         $s3Client->createBucket(['Bucket' => $_SERVER['AWS_S3_BUCKET']]);
@@ -28,15 +35,18 @@ class AwsImageRepositoryTest extends TestCase
         ]);
 
         //create test images for user list
-        //todo use constant for # of images
+        $this->testUserListImages = [];
         for ($i = 0; $i < 5; $i++) {
+            $filename = 'test' . $i . '.jpg';
             $jpg = new UploadedFile(
                 self::TEST_JPG,
-                'test' . $i . '.jpg',
+                $filename,
                 'image/jpeg',
                 null
             );
-            $s3Client->upload($_SERVER['AWS_S3_BUCKET'], self::TEST_USERNAME . '/test' . $i . '.jpg', $jpg->getPathname());
+            $s3Client->upload($_SERVER['AWS_S3_BUCKET'], self::TEST_USERNAME . '/' . $filename, $jpg->getPathname());
+            $s3Client->upload($_SERVER['AWS_S3_BUCKET'], self::TEST_USERNAME . '2/' . $filename, $jpg->getPathname());
+            $this->testUserListImages[] = $filename;
         }
     }
 
@@ -104,7 +114,7 @@ class AwsImageRepositoryTest extends TestCase
      */
     public function testImageFileTooBigThrowsException()
     {
-         $this->expectExceptionCode(AwsImageRepository::ERROR_IMAGE_TOO_BIG);
+        $this->expectExceptionCode(AwsImageRepository::ERROR_IMAGE_TOO_BIG);
 
         $png = new UploadedFile(
             __DIR__ . DIRECTORY_SEPARATOR . '..' . DIRECTORY_SEPARATOR . 'assets' . DIRECTORY_SEPARATOR . 'ginormous.jpg',
@@ -203,8 +213,7 @@ class AwsImageRepositoryTest extends TestCase
     public function testGetListByUserIsSuccessful()
     {
         $list = $this->getAwsImageRepository()->loadImageListByUserName(self::TEST_USERNAME);
-        $this->assertIsArray($list);
-        $this->assertArrayHasKey(4, $list);
+        $this->assertEquals($this->testUserListImages, $list);
     }
 
     /**

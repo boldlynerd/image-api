@@ -15,6 +15,9 @@
     * IMAGE_SIZE_BYTES_MAX (default 1000000)
     * IMAGE_SIZE_BYTES_MIN (default 400000)
     
+### Run unit tests:
+` php bin/phpunit`    
+    
 ### Endpoints:
 ####Upload one image to S3
 `/api/images/ (POST - multipart form data)`
@@ -24,13 +27,32 @@ Params:
 * imageName | url-friendly string
 * image | image file
 
+Return value (Json)
+* success | bool
+* url | string
+
 ####Return the presigned S3 URL for one image
 `/api/images/urls/{userName}/{imageName} (GET)`
+
+Params:
+* userName | url-friendly string
+* imageName | url-friendly string
+
+Return value (Json)
+* success | bool
+* url | string
 
 ####Return the list of image names for one user
 `/api/images/user/{userName} (GET)`
 
+Params:
+* userName | url-friendly string
 
-todo (general): 
+Return value (Json)
+* success | bool
+* images | array of strings
+
+####todo (general): 
 * document list of errors + error codes
 * exception classes
+* group unit tests

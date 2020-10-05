@@ -105,7 +105,7 @@ class AwsImageRepository implements ImageRepositoryInterface
         $userName = $this->cleanStringForAws($userName);
 
         $matchingImages = $this->s3Client->listObjectsV2(
-            ['Bucket' => $this->bucket, 'Prefix' => $userName]
+            ['Bucket' => $this->bucket, 'Prefix' => $userName . '/']
         );
 
         $imageNames = [];
