@@ -1,11 +1,15 @@
 # image-api
 ## AWS S3 Image API proof of concept
 
-### Setup:
+### Docker:
+docker-compose up --build
 
+Access using http://localhost
+
+### Setup:
 * composer install
-* create .env.local and env.test with needed variables:
-    * AWS_S3_ENDPOINT
+* create imageApi/.env.local
+    * AWS_S3_ENDPOINT (if using docker: http://localstack:4566)
     * AWS_S3_BUCKET
     * AWS_ACCESS_KEY_ID
     * AWS_SECRET_ACCESS_KEY
@@ -16,7 +20,10 @@
     * IMAGE_SIZE_BYTES_MIN (default 400000)
     
 ### Run unit tests:
-` php bin/phpunit`    
+* create imageApi/env.test (see Setup)
+    * AWS_S3_ENDPOINT (if using docker: http://localhost:4566)
+* cd into imageApi
+* `php bin/phpunit`    
     
 ### Endpoints:
 ####Upload one image to S3
