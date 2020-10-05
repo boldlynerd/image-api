@@ -4,7 +4,7 @@
 ### Setup:
 
 * composer install
-* create .env.local with needed variables:
+* create .env.local and env.test with needed variables:
     * AWS_S3_ENDPOINT
     * AWS_S3_BUCKET
     * AWS_ACCESS_KEY_ID
