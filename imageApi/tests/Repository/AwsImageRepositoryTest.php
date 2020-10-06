@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Tests\Util;
+namespace App\Tests\Repository;
 
 use App\Entity\Image;
 use App\Repository\AwsImageRepository;
@@ -197,6 +197,7 @@ class AwsImageRepositoryTest extends TestCase
             $awsImageRepository->load(self::TEST_USERNAME, 'test0.jpg'),
         );
         $this->assertIsString($url);
+        //todo is it a valid url
     }
 
     /**
