@@ -18,6 +18,7 @@ class AwsImageRepository implements ImageRepositoryInterface
     const ERROR_IMAGE_ALREADY_EXISTS = 6;
     const ERROR_IMAGE_TOO_BIG = 7;
     const ERROR_IMAGE_TOO_SMALL = 8;
+    const BUCKET_NOT_FOUND = 9;
 
     /**
      * @var SimpleS3Client
@@ -47,22 +48,18 @@ class AwsImageRepository implements ImageRepositoryInterface
     {
         try {
             $this->areRequiredArgumentsPresent($image, $file);
-        } catch (Exception $e) {
-            throw new Exception('Creation failed: ' . $e->getMessage(), $e->getCode());
-        }
-
-        try {
             $this->areFileTypeAndImageValid($file);
+
+            if ($this->s3Client->has($this->bucket, $this->getAwsImageKey($image))) {
+                throw new Exception('Image exists', self::ERROR_IMAGE_ALREADY_EXISTS);
+            }
         } catch (Exception $e) {
             throw new Exception('Creation failed: ' . $e->getMessage(), $e->getCode());
         }
 
-        //s3 checks
-        if ($this->s3Client->has($this->bucket, $this->getAwsImageKey($image))) {
-            throw new Exception('Creation failed: Image exists', self::ERROR_IMAGE_ALREADY_EXISTS);
-        }
+        $this->createBucketIfNeeded();
 
-        // the upload call saves a file with 0 bytes to the localstack S3 bucket
+        // Bug: the upload call saves a file with 0 bytes to the localstack S3 bucket
         // even their example code fails
         //$this->s3Client->upload('my-image-bucket', 'photos/cat_2.txt', 'I like this cat');
         //
@@ -221,5 +218,35 @@ class AwsImageRepository implements ImageRepositoryInterface
                 self::ERROR_IMAGE_TOO_BIG
             );
         }
+    }
+
+    /**
+     * I would like to use this, but it doesn't work and I have to go do work for my job
+     *
+     * @throws Exception
+     */
+    private function checkBucketExists()
+    {
+        $waiter = $this->s3Client->bucketExists(['Bucket' => $this->bucket]);
+
+        while (true) {
+            if ($waiter->wait(0)) {
+                break;
+            }
+
+            sleep(1);
+        }
+
+        if (!$waiter->isSuccess()) {
+            throw new Exception(
+                'Bucket not found',
+                self::BUCKET_NOT_FOUND
+            );
+        }
+    }
+
+    private function createBucketIfNeeded()
+    {
+        $this->s3Client->createBucket(['Bucket' => $this->bucket]);
     }
 }
