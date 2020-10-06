@@ -14,10 +14,7 @@ class AwsImageRepositoryTest extends TestCase
     const TEST_UPLOADED_IMAGENAME = 'testImageName.jpg';
     const TEST_JPG = __DIR__ . DIRECTORY_SEPARATOR . '..' . DIRECTORY_SEPARATOR . 'assets' . DIRECTORY_SEPARATOR . 'googlyeyedmerlin.jpg';
 
-    /**
-     * @var array
-     */
-    private $testUserListImages = [];
+    private array $testUserListImages = [];
 
     protected function setUp(): void
     {
@@ -84,7 +81,28 @@ class AwsImageRepositoryTest extends TestCase
     /**
      * @covers \App\Repository\AwsImageRepository::create
      */
-    public function testNoImageFileThrowsException()
+    public function testCreateOverwriteExistingImageThrowsException (){
+        $this->expectExceptionCode(AwsImageRepository::ERROR_IMAGE_ALREADY_EXISTS);
+
+        $jpg = new UploadedFile(
+            self::TEST_JPG,
+            $this->testUserListImages[0],
+            'image/jpeg',
+            null
+        );
+
+        $awsImageRepository = $this->getAwsImageRepository();
+
+        $awsImageRepository->create(
+            $awsImageRepository->load(self::TEST_USERNAME, $this->testUserListImages[0]),
+            $jpg
+        );
+    }
+
+    /**
+     * @covers \App\Repository\AwsImageRepository::create
+     */
+    public function testCreateNoImageFileThrowsException()
     {
         $this->expectExceptionCode(AwsImageRepository::ERROR_IMAGE_UPLOAD_NOT_FOUND);
         $awsImageRepository = $this->getAwsImageRepository();
@@ -94,7 +112,7 @@ class AwsImageRepositoryTest extends TestCase
     /**
      * @covers \App\Repository\AwsImageRepository::create
      */
-    public function testImageFileTooSmallThrowsException()
+    public function testCreateImageFileTooSmallThrowsException()
     {
         $this->expectExceptionCode(AwsImageRepository::ERROR_IMAGE_TOO_SMALL);
 
@@ -112,7 +130,7 @@ class AwsImageRepositoryTest extends TestCase
     /**
      * @covers \App\Repository\AwsImageRepository::create
      */
-    public function testImageFileTooBigThrowsException()
+    public function testCreateImageFileTooBigThrowsException()
     {
         $this->expectExceptionCode(AwsImageRepository::ERROR_IMAGE_TOO_BIG);
 
@@ -130,7 +148,7 @@ class AwsImageRepositoryTest extends TestCase
     /**
      * @covers \App\Repository\AwsImageRepository::create
      */
-    public function testImageFileWrongTypeThrowsException()
+    public function testCreateImageFileWrongTypeThrowsException()
     {
         $this->expectExceptionCode(AwsImageRepository::ERROR_IMAGE_TYPE_NOT_ALLOWED);
 
